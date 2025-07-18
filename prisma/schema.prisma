@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Barrio {
+  id          String    @id @default(cuid())
+  nombre      String    @unique
+  descripcion String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relación con donantes
+  donantes    Donante[]
+
+  @@map("barrios")
+}
+
+model Donante {
+  id            String   @id @default(cuid())
+  nombre        String
+  apellido      String
+  cedula        String   @unique
+  telefono      String?
+  email         String?
+  tipoSangre    String   @map("tipo_sangre")
+  fechaDonacion DateTime @default(now()) @map("fecha_donacion")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  // Relación con barrio
+  barrioId      String   @map("barrio_id")
+  barrio        Barrio   @relation(fields: [barrioId], references: [id], onDelete: Cascade)
+
+  @@map("donantes")
+}
