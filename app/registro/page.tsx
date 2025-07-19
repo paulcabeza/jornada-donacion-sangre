@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Droplets, Plus, Search, Calendar, Phone, Mail, IdCard, Users, MapPin } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Droplets, Plus, Search, Calendar, Phone, Mail, IdCard, Users, MapPin, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 
 interface Donante {
   id: string;
@@ -23,6 +24,14 @@ export default function RegistroPage() {
   const [donantesFiltrados, setDonantesFiltrados] = useState<Donante[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [donanteToDelete, setDonanteToDelete] = useState<Donante | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Contraseña para eliminar donantes
+  const DELETE_PASSWORD = "cusca2520";
 
   useEffect(() => {
     cargarDonantes();
@@ -63,6 +72,60 @@ export default function RegistroPage() {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const handleDeleteClick = (donante: Donante) => {
+    setDonanteToDelete(donante);
+    setShowDeleteModal(true);
+    setDeletePassword("");
+    setDeleteMessage(null);
+  };
+
+  const handleDeleteConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (deletePassword !== DELETE_PASSWORD) {
+      setDeleteMessage({ type: "error", text: "Contraseña incorrecta" });
+      return;
+    }
+
+    if (!donanteToDelete) return;
+
+    setIsDeleting(true);
+    setDeleteMessage(null);
+
+    try {
+      const response = await fetch(`/api/donantes/${donanteToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setDeleteMessage({ type: "success", text: "Donante eliminado exitosamente" });
+        
+        // Recargar la lista de donantes
+        setTimeout(() => {
+          cargarDonantes();
+          setShowDeleteModal(false);
+          setDonanteToDelete(null);
+          setDeletePassword("");
+          setDeleteMessage(null);
+        }, 1500);
+      } else {
+        const error = await response.json();
+        setDeleteMessage({ type: "error", text: error.error || "Error al eliminar donante" });
+      }
+    } catch (error) {
+      setDeleteMessage({ type: "error", text: "Error de conexión" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDonanteToDelete(null);
+    setDeletePassword("");
+    setDeleteMessage(null);
   };
 
   if (isLoading) {
@@ -195,6 +258,7 @@ export default function RegistroPage() {
                       <th className="text-left p-4 font-semibold text-gray-900">Barrio</th>
                       <th className="text-center p-4 font-semibold text-gray-900">Tipo de Sangre</th>
                       <th className="text-left p-4 font-semibold text-gray-900">Fecha de Donación</th>
+                      <th className="text-center p-4 font-semibold text-gray-900">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -247,13 +311,23 @@ export default function RegistroPage() {
                             {donante.tipoSangre}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            {formatearFecha(donante.fechaDonacion)}
-                          </div>
-                        </td>
-                      </tr>
+                                                 <td className="p-4">
+                           <div className="flex items-center gap-2 text-gray-700">
+                             <Calendar className="h-4 w-4 text-gray-400" />
+                             {formatearFecha(donante.fechaDonacion)}
+                           </div>
+                         </td>
+                         <td className="p-4 text-center">
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={() => handleDeleteClick(donante)}
+                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </td>
+                       </tr>
                     ))}
                   </tbody>
                 </table>
@@ -273,6 +347,74 @@ export default function RegistroPage() {
             </p>
           </div>
         </div>
+
+        {/* Modal de confirmación de eliminación */}
+        {showDeleteModal && donanteToDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="text-red-600 flex items-center gap-2">
+                  <Trash2 className="h-5 w-5" />
+                  Eliminar Donante
+                </CardTitle>
+                <CardDescription>
+                  ¿Estás seguro de que quieres eliminar a {donanteToDelete.nombre} {donanteToDelete.apellido}?
+                  Esta acción no se puede deshacer.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleDeleteConfirm} className="space-y-4">
+                  <div>
+                    <Label htmlFor="deletePassword">Contraseña de confirmación</Label>
+                    <Input
+                      id="deletePassword"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Ingresa la contraseña para confirmar"
+                      required
+                    />
+                  </div>
+                  
+                  {deleteMessage && (
+                    <div className={`flex items-center gap-2 p-3 rounded-md ${
+                      deleteMessage.type === "error" 
+                        ? "bg-red-50 text-red-700 border border-red-200" 
+                        : "bg-green-50 text-green-700 border border-green-200"
+                    }`}>
+                      {deleteMessage.type === "success" ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      {deleteMessage.text}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleDeleteCancel}
+                      disabled={isDeleting}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="destructive"
+                      disabled={isDeleting}
+                      className="flex-1"
+                    >
+                      {isDeleting ? "Eliminando..." : "Eliminar"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ interface Barrio {
 const tiposSangre = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 // Contraseña simple - puedes cambiarla por la que quieras
-const ADMIN_PASSWORD = "admin123";
+const ADMIN_PASSWORD = "cusca2520";
 
 export default function NuevoRegistroPage() {
   const router = useRouter();
