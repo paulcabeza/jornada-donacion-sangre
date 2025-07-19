@@ -4,10 +4,10 @@ import { prisma } from "@/lib/db";
 // DELETE - Eliminar un donante por ID
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const { id } = params;
 
     // Verificar que el donante existe
     const donante = await prisma.donante.findUnique({
