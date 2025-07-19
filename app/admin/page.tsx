@@ -4,14 +4,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail, IdCard } from "lucide-react";
 
 interface Estadisticas {
   totalDonantes: number;
   donantesPorBarrio: { id: string; nombre: string; cantidad: number }[];
   donantesPorTipoSangre: { tipo: string; cantidad: number }[];
-  donacionesPorMes: { mes: string; cantidad: number }[];
 }
 
 interface Donante {
@@ -105,7 +104,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -142,20 +141,6 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <Droplets className="h-10 w-10 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600">Este Mes</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {estadisticas?.donacionesPorMes?.[estadisticas.donacionesPorMes.length - 1]?.cantidad || 0}
-                  </p>
-                </div>
-                <Calendar className="h-10 w-10 text-purple-600" />
               </div>
             </CardContent>
           </Card>
@@ -234,39 +219,12 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Gráfico de tendencia mensual */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Tendencia de Donaciones (Últimos 6 Meses)</CardTitle>
-            <CardDescription>
-              Evolución temporal de las donaciones de sangre
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={estadisticas?.donacionesPorMes || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="cantidad" 
-                    stroke="#ef4444" 
-                    strokeWidth={3}
-                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+
 
         {/* Navegación */}
         <div className="text-center">
           <Button variant="outline" asChild>
-            <a href="/registro">Ir a Registro de Donantes</a>
+            <a href="/registro">Ver Listado de Donantes</a>
           </Button>
         </div>
 

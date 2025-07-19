@@ -28,7 +28,7 @@ export default function HomePage() {
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <a href="/registro">
                 <Users className="mr-2 h-6 w-6" />
-                Registrar Donante
+                Gestionar Donantes
               </a>
             </Button>
             
@@ -110,7 +110,7 @@ export default function HomePage() {
           </p>
           <Button size="lg" variant="secondary" className="text-lg px-8 py-4" asChild>
             <a href="/registro">
-              Comenzar Ahora
+              Ver Donantes
             </a>
           </Button>
         </div>

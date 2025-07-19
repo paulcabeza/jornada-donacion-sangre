@@ -1,268 +1,277 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Droplets, CheckCircle, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Droplets, Plus, Search, Calendar, Phone, Mail, IdCard, Users, MapPin } from "lucide-react";
 
-// Esquema de validación
-const donanteSchema = z.object({
-  nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  apellido: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
-  cedula: z.string().min(8, "La cédula debe tener al menos 8 caracteres"),
-  telefono: z.string().optional(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
-  tipoSangre: z.string().min(1, "Selecciona un tipo de sangre"),
-  barrioId: z.string().min(1, "Selecciona un barrio"),
-});
-
-type DonanteForm = z.infer<typeof donanteSchema>;
-
-interface Barrio {
+interface Donante {
   id: string;
   nombre: string;
+  apellido: string;
+  cedula: string;
+  telefono?: string;
+  email?: string;
+  tipoSangre: string;
+  fechaDonacion: string;
+  barrio: { id: string; nombre: string };
 }
 
-const tiposSangre = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-
 export default function RegistroPage() {
-  const [barrios, setBarrios] = useState<Barrio[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [donantes, setDonantes] = useState<Donante[]>([]);
+  const [donantesFiltrados, setDonantesFiltrados] = useState<Donante[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
 
-  const form = useForm<DonanteForm>({
-    resolver: zodResolver(donanteSchema),
-    defaultValues: {
-      nombre: "",
-      apellido: "",
-      cedula: "",
-      telefono: "",
-      email: "",
-      tipoSangre: "",
-      barrioId: "",
-    },
-  });
-
-  // Cargar barrios
   useEffect(() => {
-    fetch("/api/barrios")
-      .then((res) => res.json())
-      .then((data) => setBarrios(data))
-      .catch((error) => console.error("Error loading barrios:", error));
+    cargarDonantes();
   }, []);
 
-  const onSubmit = async (data: DonanteForm) => {
-    setIsLoading(true);
-    setMessage(null);
+  useEffect(() => {
+    // Filtrar donantes cuando cambia la búsqueda
+    if (busqueda.trim() === "") {
+      setDonantesFiltrados(donantes);
+    } else {
+      const filtrados = donantes.filter((donante) =>
+        donante.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        donante.apellido.toLowerCase().includes(busqueda.toLowerCase()) ||
+        donante.cedula.includes(busqueda) ||
+        donante.barrio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        donante.tipoSangre.toLowerCase().includes(busqueda.toLowerCase())
+      );
+      setDonantesFiltrados(filtrados);
+    }
+  }, [busqueda, donantes]);
 
+  const cargarDonantes = async () => {
     try {
-      const response = await fetch("/api/donantes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        setMessage({ type: "success", text: "¡Donante registrado exitosamente!" });
-        form.reset();
-      } else {
-        const error = await response.json();
-        setMessage({ type: "error", text: error.error || "Error al registrar donante" });
-      }
+      const response = await fetch("/api/donantes");
+      const data = await response.json();
+      setDonantes(data);
+      setDonantesFiltrados(data);
     } catch (error) {
-      setMessage({ type: "error", text: "Error de conexión" });
+      console.error("Error loading donantes:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <Droplets className="h-12 w-12 text-red-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">Cargando donantes...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 p-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Droplets className="h-12 w-12 text-red-600" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Registro de Donantes
+            Listado de Donantes
           </h1>
           <p className="text-gray-600">
-            Por favor ingresa todos los datos para registrar al donante.
+            Gestión y registro de donantes de sangre
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Información del Donante</CardTitle>
-            <CardDescription>
-              Completa todos los campos requeridos para registrarte como donante
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="nombre"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Juan" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        {/* Estadísticas rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600">Total Donantes</p>
+                  <p className="text-3xl font-bold text-red-600">{donantes.length}</p>
+                </div>
+                <Users className="h-10 w-10 text-red-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-                  <FormField
-                    control={form.control}
-                    name="apellido"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Apellido *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Pérez" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600">Mostrando</p>
+                  <p className="text-3xl font-bold text-blue-600">{donantesFiltrados.length}</p>
+                </div>
+                <Search className="h-10 w-10 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600">Barrios</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {new Set(donantes.map(d => d.barrio.nombre)).size}
+                  </p>
+                </div>
+                <MapPin className="h-10 w-10 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Controles */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nombre, DUI, barrio o tipo de sangre..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="pl-10"
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="cedula"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>DUI *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="00000000-0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="telefono"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Teléfono</FormLabel>
-                        <FormControl>
-                          <Input placeholder="7777-7777" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="juan@email.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="tipoSangre"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de Sangre *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona tu tipo de sangre" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {tiposSangre.map((tipo) => (
-                              <SelectItem key={tipo} value={tipo}>
-                                {tipo}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="barrioId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Barrio *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona tu barrio" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {barrios.map((barrio) => (
-                              <SelectItem key={barrio.id} value={barrio.id}>
-                                {barrio.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {message && (
-                  <div className={`flex items-center gap-2 p-4 rounded-md ${
-                    message.type === "success" 
-                      ? "bg-green-50 text-green-700 border border-green-200" 
-                      : "bg-red-50 text-red-700 border border-red-200"
-                  }`}>
-                    {message.type === "success" ? (
-                      <CheckCircle className="h-5 w-5" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5" />
-                    )}
-                    {message.text}
-                  </div>
-                )}
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Registrando..." : "Registrar Donante"}
-                </Button>
-              </form>
-            </Form>
+              </div>
+              
+              <Button asChild className="flex items-center gap-2">
+                <a href="/registro/nuevo">
+                  <Plus className="h-4 w-4" />
+                  Nuevo Donante
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6">
-          <Button variant="outline" asChild>
-            <a href="/admin">Ver Dashboard Administrativo</a>
-          </Button>
+        {/* Tabla de donantes */}
+        <Card>
+          <CardContent className="p-0">
+            {donantesFiltrados.length === 0 ? (
+              <div className="p-12 text-center">
+                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-500 mb-2">
+                  {busqueda ? "No se encontraron donantes" : "No hay donantes registrados"}
+                </h3>
+                <p className="text-gray-400 mb-6">
+                  {busqueda 
+                    ? "Intenta con otros términos de búsqueda" 
+                    : "Comienza agregando el primer donante"
+                  }
+                </p>
+                {!busqueda && (
+                  <Button asChild>
+                    <a href="/registro/nuevo">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Registrar Primer Donante
+                    </a>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="text-left p-4 font-semibold text-gray-900">Nombre Completo</th>
+                      <th className="text-left p-4 font-semibold text-gray-900">DUI</th>
+                      <th className="text-left p-4 font-semibold text-gray-900">Teléfono</th>
+                      <th className="text-left p-4 font-semibold text-gray-900">Email</th>
+                      <th className="text-left p-4 font-semibold text-gray-900">Barrio</th>
+                      <th className="text-center p-4 font-semibold text-gray-900">Tipo de Sangre</th>
+                      <th className="text-left p-4 font-semibold text-gray-900">Fecha de Donación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {donantesFiltrados.map((donante, index) => (
+                      <tr 
+                        key={donante.id} 
+                        className={`border-b hover:bg-gray-50 transition-colors ${
+                          index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                        }`}
+                      >
+                        <td className="p-4">
+                          <div className="font-medium text-gray-900">
+                            {donante.nombre} {donante.apellido}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <IdCard className="h-4 w-4 text-gray-400" />
+                            {donante.cedula}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          {donante.telefono ? (
+                            <div className="flex items-center gap-2 text-gray-700">
+                              <Phone className="h-4 w-4 text-gray-400" />
+                              {donante.telefono}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No registrado</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {donante.email ? (
+                            <div className="flex items-center gap-2 text-gray-700">
+                              <Mail className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm">{donante.email}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No registrado</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <MapPin className="h-4 w-4 text-gray-400" />
+                            {donante.barrio.nombre}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="inline-flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 font-bold rounded-full">
+                            {donante.tipoSangre}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2 text-gray-700">
+                            <Calendar className="h-4 w-4 text-gray-400" />
+                            {formatearFecha(donante.fechaDonacion)}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button variant="outline" asChild>
+              <a href="/admin">Ver Dashboard Administrativo</a>
+            </Button>
+            <p className="text-sm text-gray-500">
+              Total: {donantesFiltrados.length} de {donantes.length} donantes
+            </p>
+          </div>
         </div>
       </div>
     </div>

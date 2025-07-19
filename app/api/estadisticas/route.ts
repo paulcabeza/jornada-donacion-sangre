@@ -24,46 +24,8 @@ export async function GET() {
       by: ['tipoSangre'],
       _count: {
         _all: true
-      },
-      orderBy: {
-        _count: {
-          _all: 'desc'
-        }
       }
     });
-
-    // Donaciones por mes (últimos 6 meses)
-    const seiseMesesAtras = new Date();
-    seiseMesesAtras.setMonth(seiseMesesAtras.getMonth() - 6);
-
-    const donacionesPorMes = await prisma.donante.groupBy({
-      by: ['fechaDonacion'],
-      where: {
-        fechaDonacion: {
-          gte: seiseMesesAtras
-        }
-      },
-      _count: {
-        _all: true
-      }
-    });
-
-    // Procesar donaciones por mes para agrupar por mes/año
-    const donacionesAgrupadas = donacionesPorMes.reduce((acc: any[], donacion) => {
-      const fecha = new Date(donacion.fechaDonacion);
-      const mesAno = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-      
-      const existente = acc.find(item => item.mes === mesAno);
-      if (existente) {
-        existente.cantidad += donacion._count._all;
-      } else {
-        acc.push({
-          mes: mesAno,
-          cantidad: donacion._count._all
-        });
-      }
-      return acc;
-    }, []);
 
     const estadisticas = {
       totalDonantes,
@@ -74,9 +36,8 @@ export async function GET() {
       })),
       donantesPorTipoSangre: donantesPorTipoSangre.map(tipo => ({
         tipo: tipo.tipoSangre,
-        cantidad: tipo._count._all
-      })),
-      donacionesPorMes: donacionesAgrupadas.sort((a, b) => a.mes.localeCompare(b.mes))
+        cantidad: tipo._count?._all || 0
+      }))
     };
 
     return NextResponse.json(estadisticas);
