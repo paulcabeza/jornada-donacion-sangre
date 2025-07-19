@@ -31,7 +31,7 @@ export default function RegistroPage() {
   const [deleteMessage, setDeleteMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Contraseña para eliminar donantes
-  const DELETE_PASSWORD = "cusca2520";
+  const DELETE_PASSWORD = process.env.NEXT_PUBLIC_DELETE_PASSWORD;
 
   useEffect(() => {
     cargarDonantes();
