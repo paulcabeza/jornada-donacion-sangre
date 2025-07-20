@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
 import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail } from "lucide-react";
 
 interface Estadisticas {
@@ -77,16 +77,15 @@ export default function HomePage() {
     const maxCantidad = Math.max(...data.map(item => item.cantidad));
     
     if (maxCantidad === 0) return [0, 10];
-    if (maxCantidad <= 10) return [0, 10];
-    if (maxCantidad <= 20) return [0, 20];
-    if (maxCantidad <= 50) return [0, Math.ceil(maxCantidad * 1.2)];
+    if (maxCantidad <= 10) return [0, 15];
+    if (maxCantidad <= 20) return [0, 25];
+    if (maxCantidad <= 50) return [0, Math.ceil(maxCantidad * 1.3)];
     
-    return [0, Math.ceil(maxCantidad * 1.1)];
+    return [0, Math.ceil(maxCantidad * 1.2)];
   };
 
   const generarTicks = (max: number) => {
-    if (max <= 10) return [0, 2, 4, 6, 8, 10];
-    if (max <= 20) return [0, 4, 8, 12, 16, 20];
+    if (max <= 25) return [0, 5, 10, 15, 20, 25];
     if (max <= 50) {
       const step = Math.ceil(max / 5);
       return Array.from({ length: 6 }, (_, i) => i * step);
@@ -94,6 +93,42 @@ export default function HomePage() {
     
     const step = Math.ceil(max / 5);
     return Array.from({ length: 6 }, (_, i) => i * step);
+  };
+
+  // Componente personalizado para las etiquetas de las barras
+  const CustomLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    
+    if (!value || value === 0) return null;
+    
+    return (
+      <g>
+        {/* Fondo redondeado */}
+        <rect
+          x={x + width / 2 - 20}
+          y={y - 35}
+          width={40}
+          height={24}
+          rx={12}
+          fill="#ffffff"
+          stroke="#ef4444"
+          strokeWidth={1.5}
+          filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
+        />
+        {/* Texto */}
+        <text
+          x={x + width / 2}
+          y={y - 20}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="12"
+          fontWeight="600"
+          fill="#ef4444"
+        >
+          {value}
+        </text>
+      </g>
+    );
   };
 
   if (isLoading) {
@@ -202,7 +237,12 @@ export default function HomePage() {
                           verDonantesBarrio(data.payload.id, data.payload.nombre);
                         }
                       }}
-                    />
+                    >
+                      <LabelList 
+                        dataKey="cantidad" 
+                        content={<CustomLabel />}
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
