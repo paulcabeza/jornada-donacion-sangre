@@ -1,122 +1,387 @@
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Droplets, Users, BarChart3, Heart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail } from "lucide-react";
+
+interface Estadisticas {
+  totalDonantes: number;
+  donantesPorBarrio: { id: string; nombre: string; cantidad: number }[];
+  donantesPorTipoSangre: { tipo: string; cantidad: number }[];
+}
+
+interface Donante {
+  id: string;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  telefono?: string;
+  email?: string;
+  tipoSangre: string;
+  fechaDonacion: string;
+  barrio: { id: string; nombre: string };
+}
 
 export default function HomePage() {
+  const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
+  const [donantesBarrio, setDonantesBarrio] = useState<Donante[]>([]);
+  const [barrioSeleccionado, setBarrioSeleccionado] = useState<string>("");
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    cargarEstadisticas();
+  }, []);
+
+  const cargarEstadisticas = async () => {
+    try {
+      const response = await fetch("/api/estadisticas");
+      const data = await response.json();
+      setEstadisticas(data);
+    } catch (error) {
+      console.error("Error loading estadisticas:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verDonantesBarrio = async (barrioId: string, nombreBarrio: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/donantes?barrioId=${barrioId}`);
+      const donantes = await response.json();
+      setDonantesBarrio(donantes);
+      setBarrioSeleccionado(nombreBarrio);
+      setModalAbierto(true);
+    } catch (error) {
+      console.error("Error loading donantes:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const calcularDominioY = (data: { cantidad: number }[]) => {
+    if (!data || data.length === 0) return [0, 10];
+    
+    const maxCantidad = Math.max(...data.map(item => item.cantidad));
+    
+    if (maxCantidad === 0) return [0, 10];
+    if (maxCantidad <= 10) return [0, 10];
+    if (maxCantidad <= 20) return [0, 20];
+    if (maxCantidad <= 50) return [0, Math.ceil(maxCantidad * 1.2)];
+    
+    return [0, Math.ceil(maxCantidad * 1.1)];
+  };
+
+  const generarTicks = (max: number) => {
+    if (max <= 10) return [0, 2, 4, 6, 8, 10];
+    if (max <= 20) return [0, 4, 8, 12, 16, 20];
+    if (max <= 50) {
+      const step = Math.ceil(max / 5);
+      return Array.from({ length: 6 }, (_, i) => i * step);
+    }
+    
+    const step = Math.ceil(max / 5);
+    return Array.from({ length: 6 }, (_, i) => i * step);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Droplets className="h-12 w-12 text-red-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-orange-50">
-      {/* Hero Section */}
-      <div className="text-center py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-center mb-6">
-            <div className="relative">
-              <Droplets className="h-20 w-20 text-red-600" />
-              <Heart className="h-8 w-8 text-red-500 absolute -top-2 -right-2" />
-            </div>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <TrendingUp className="h-12 w-12 text-red-600" />
           </div>
-          
-          <h1 className="text-6xl font-bold text-gray-900 mb-6">
-            Donación de Sangre
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Jornada de Donación de Sangre - Estaca Cuzcatlán
           </h1>
-          
-          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-            Un gesto que salva vidas. Únete a nuestra comunidad de donantes y ayuda a 
-            quienes más lo necesitan. Tu sangre puede ser la esperanza de alguien.
+          <p className="text-2xl text-gray-600">
+            18-Julio-2025
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Button size="lg" className="text-lg px-8 py-4" asChild>
-              <a href="/registro">
-                <Users className="mr-2 h-6 w-6" />
-                Gestionar Donantes
-              </a>
-            </Button>
-            
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4" asChild>
-              <a href="/admin">
-                <BarChart3 className="mr-2 h-6 w-6" />
-                Dashboard Admin
-              </a>
-            </Button>
-          </div>
         </div>
-      </div>
 
-      {/* Features Section */}
-      <div className="py-20 px-4 bg-white/50">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">
-            ¿Por qué donar sangre?
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                  <Heart className="h-8 w-8 text-red-600" />
+        {/* Estadísticas principales */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-100">Total Donantes</p>
+                  <p className="text-4xl font-bold">{estadisticas?.totalDonantes || 0}</p>
                 </div>
-                <CardTitle className="text-2xl">Salvas Vidas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-lg">
-                  Una sola donación puede salvar hasta 3 vidas. Tu generosidad 
-                  marca la diferencia en momentos críticos.
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Users className="h-12 w-12 text-red-200" />
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="text-center border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Users className="h-8 w-8 text-blue-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600">Barrios Activos</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {estadisticas?.donantesPorBarrio?.filter(b => b.cantidad > 0).length || 0}
+                  </p>
                 </div>
-                <CardTitle className="text-2xl">Comunidad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-lg">
-                  Únete a una red de personas solidarias que trabajan juntas 
-                  para hacer un impacto positivo en la sociedad.
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <MapPin className="h-10 w-10 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="text-center border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <BarChart3 className="h-8 w-8 text-green-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600">Tipos de Sangre</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {estadisticas?.donantesPorTipoSangre?.length || 0}
+                  </p>
                 </div>
-                <CardTitle className="text-2xl">Seguimiento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-lg">
-                  Mantén un registro de tus donaciones y ve el impacto 
-                  colectivo de nuestra comunidad de donantes.
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </div>
+                <Droplets className="h-10 w-10 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Call to Action */}
-      <div className="py-20 px-4 bg-gradient-to-r from-red-600 to-red-700 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">
-            ¿Listo para hacer la diferencia?
-          </h2>
-          <p className="text-xl mb-8 opacity-90">
-            El proceso es simple, seguro y solo toma unos minutos. 
-            Tu donación puede ser el regalo más valioso que alguien reciba.
-          </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-4" asChild>
-            <a href="/registro">
-              Ver Donantes
-            </a>
+        {/* Gráficos y Beneficios */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Gráfico de barrios */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Donantes por Barrio</CardTitle>
+              <CardDescription>
+                Haz clic en una barra para ver los donantes de ese barrio
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={estadisticas?.donantesPorBarrio || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="nombre" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      domain={calcularDominioY(estadisticas?.donantesPorBarrio || [])}
+                      ticks={generarTicks(calcularDominioY(estadisticas?.donantesPorBarrio || [])[1])}
+                    />
+                    <Tooltip />
+                    <Bar 
+                      dataKey="cantidad" 
+                      fill="#ef4444"
+                      cursor="pointer"
+                      onClick={(data) => {
+                        if (data.payload) {
+                          verDonantesBarrio(data.payload.id, data.payload.nombre);
+                        }
+                      }}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sección de Beneficios y Contactos */}
+          <Card>
+            <CardHeader>
+              <CardTitle>¿Y tú, ya te apuntaste para donar sangre?</CardTitle>
+              <CardDescription>
+                Estos son algunos beneficios de participar en la donación de sangre:
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Beneficios */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Beneficios:</h4>
+                  <ul className="space-y-2 text-gray-700 mb-4">
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Salvas hasta 3 vidas con una sola donación</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Reduce el hierro en sangre (previene enfermedades)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Estimula la producción de nuevas células</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Recibes análisis gratuito de tu sangre</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Mejora tu bienestar emocional</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span>Proceso seguro y solo toma 10-15 minutos</span>
+                    </li>
+                  </ul>
+                  
+                  <Button asChild className="w-full">
+                    <a href="/beneficios">
+                      Ver Más Beneficios
+                    </a>
+                  </Button>
+                </div>
+
+                {/* Contactos */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Contactos para Donación:</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Si deseas anotarte para donar sangre o tienes preguntas, puedes contactar a:
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="font-medium">Daniel Sanchez</span>
+                      <a 
+                        href="https://wa.me/50378535413" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        +503 7853-5413
+                      </a>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="font-medium">Rosibel de Sanchez</span>
+                      <a 
+                        href="https://wa.me/50376695869" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        +503 7669-5869
+                      </a>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="font-medium">Fredy Matute</span>
+                      <a 
+                        href="https://wa.me/50375730824" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        +503 7573-0824
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Navegación */}
+        <div className="text-center">
+          <Button variant="outline" asChild>
+            <a href="/registro">Ver Listado de Donantes</a>
           </Button>
         </div>
+
+        {/* Modal de donantes por barrio */}
+        <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Donantes de {barrioSeleccionado}</DialogTitle>
+              <DialogDescription>
+                Lista completa de donantes registrados en este barrio
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4">
+              {donantesBarrio.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  No hay donantes registrados en este barrio
+                </p>
+              ) : (
+                donantesBarrio.map((donante, index) => (
+                  <Card key={donante.id} className="p-4">
+                    <div className="flex items-center gap-4">
+                      {/* Correlativo */}
+                      <div className="text-center flex-shrink-0">
+                        <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 font-semibold rounded-full text-sm">
+                          {index + 1}
+                        </div>
+                      </div>
+                      
+                      {/* Información principal */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg mb-1">
+                          {donante.nombre} {donante.apellido}
+                        </h3>
+                        {donante.email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{donante.email}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Tipo de sangre */}
+                      <div className="text-center flex-shrink-0">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-1">
+                          <span className="text-red-600 font-bold text-sm">
+                            {donante.tipoSangre}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">Tipo de Sangre</p>
+                      </div>
+                      
+                      {/* Fecha */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="flex items-center justify-end gap-1 mb-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <span className="text-sm text-gray-600">
+                            {formatearFecha(donante.fechaDonacion)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">Fecha de donación</p>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-
-
     </div>
   );
 }
