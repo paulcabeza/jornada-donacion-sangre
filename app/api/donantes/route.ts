@@ -17,7 +17,7 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: { fechaDonacion: "desc" },
+      orderBy: { createdAt: "asc" },
     });
 
     return NextResponse.json(donantes);

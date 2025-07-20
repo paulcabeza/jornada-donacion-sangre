@@ -2,36 +2,24 @@ import { prisma } from "./db";
 
 const barriosEjemplo = [
   {
-    nombre: "Centro",
-    descripcion: "Zona céntrica de la ciudad",
+    nombre: "Buena Vista",
+    descripcion: "Barrio residencial con vista panorámica",
   },
   {
-    nombre: "La Comercial",
-    descripcion: "Barrio comercial y residencial",
+    nombre: "Vista Hermosa",
+    descripcion: "Zona residencial con hermosas vistas",
   },
   {
-    nombre: "El Bosque",
-    descripcion: "Zona residencial con áreas verdes",
+    nombre: "Los Llanitos",
+    descripcion: "Barrio tradicional y familiar",
   },
   {
-    nombre: "San José",
-    descripcion: "Barrio tradicional",
+    nombre: "Mejicanos",
+    descripcion: "Zona urbana y comercial",
   },
   {
-    nombre: "Las Flores",
-    descripcion: "Zona residencial moderna",
-  },
-  {
-    nombre: "El Puerto",
-    descripcion: "Barrio cerca del puerto principal",
-  },
-  {
-    nombre: "Villa Nueva",
-    descripcion: "Desarrollo habitacional reciente",
-  },
-  {
-    nombre: "Los Pinos",
-    descripcion: "Barrio residencial tranquilo",
+    nombre: "Ayutuxtepeque",
+    descripcion: "Municipio con tradición histórica",
   },
 ];
 

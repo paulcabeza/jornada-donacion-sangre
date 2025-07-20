@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail, IdCard } from "lucide-react";
+import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail } from "lucide-react";
 
 interface Estadisticas {
   totalDonantes: number;
@@ -71,6 +71,31 @@ export default function AdminDashboard() {
       month: "2-digit",
       year: "numeric",
     });
+  };
+
+  const calcularDominioY = (data: { cantidad: number }[]) => {
+    if (!data || data.length === 0) return [0, 10];
+    
+    const maxCantidad = Math.max(...data.map(item => item.cantidad));
+    
+    if (maxCantidad === 0) return [0, 10];
+    if (maxCantidad <= 10) return [0, 10];
+    if (maxCantidad <= 20) return [0, 20];
+    if (maxCantidad <= 50) return [0, Math.ceil(maxCantidad * 1.2)];
+    
+    return [0, Math.ceil(maxCantidad * 1.1)];
+  };
+
+  const generarTicks = (max: number) => {
+    if (max <= 10) return [0, 2, 4, 6, 8, 10];
+    if (max <= 20) return [0, 4, 8, 12, 16, 20];
+    if (max <= 50) {
+      const step = Math.ceil(max / 5);
+      return Array.from({ length: 6 }, (_, i) => i * step);
+    }
+    
+    const step = Math.ceil(max / 5);
+    return Array.from({ length: 6 }, (_, i) => i * step);
   };
 
   if (isLoading) {
@@ -165,7 +190,10 @@ export default function AdminDashboard() {
                       height={80}
                       fontSize={12}
                     />
-                    <YAxis />
+                    <YAxis 
+                      domain={calcularDominioY(estadisticas?.donantesPorBarrio || [])}
+                      ticks={generarTicks(calcularDominioY(estadisticas?.donantesPorBarrio || [])[1])}
+                    />
                     <Tooltip />
                     <Bar 
                       dataKey="cantidad" 
@@ -307,45 +335,43 @@ export default function AdminDashboard() {
                   No hay donantes registrados en este barrio
                 </p>
               ) : (
-                donantesBarrio.map((donante) => (
+                donantesBarrio.map((donante, index) => (
                   <Card key={donante.id} className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-2">
-                          {donante.nombre} {donante.apellido}
-                        </h3>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <IdCard className="h-4 w-4" />
-                            {donante.cedula}
-                          </div>
-                          {donante.telefono && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4" />
-                              {donante.telefono}
-                            </div>
-                          )}
-                          {donante.email && (
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              {donante.email}
-                            </div>
-                          )}
+                    <div className="flex items-center gap-4">
+                      {/* Correlativo */}
+                      <div className="text-center flex-shrink-0">
+                        <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 font-semibold rounded-full text-sm">
+                          {index + 1}
                         </div>
                       </div>
                       
-                      <div className="text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-2">
-                          <span className="text-red-600 font-bold text-lg">
+                      {/* Información principal */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg mb-1">
+                          {donante.nombre} {donante.apellido}
+                        </h3>
+                        {donante.email && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{donante.email}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Tipo de sangre */}
+                      <div className="text-center flex-shrink-0">
+                        <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-1">
+                          <span className="text-red-600 font-bold text-sm">
                             {donante.tipoSangre}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600">Tipo de Sangre</p>
+                        <p className="text-xs text-gray-500">Tipo de Sangre</p>
                       </div>
                       
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-2 mb-1">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                      {/* Fecha */}
+                      <div className="text-right flex-shrink-0">
+                        <div className="flex items-center justify-end gap-1 mb-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
                           <span className="text-sm text-gray-600">
                             {formatearFecha(donante.fechaDonacion)}
                           </span>

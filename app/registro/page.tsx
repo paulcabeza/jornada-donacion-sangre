@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Droplets, Plus, Search, Calendar, Phone, Mail, IdCard, Users, MapPin, Trash2, CheckCircle, AlertCircle } from "lucide-react";
+import { Droplets, Plus, Search, Calendar, Mail, Users, MapPin, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 
 interface Donante {
   id: string;
@@ -45,7 +45,6 @@ export default function RegistroPage() {
       const filtrados = donantes.filter((donante) =>
         donante.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         donante.apellido.toLowerCase().includes(busqueda.toLowerCase()) ||
-        donante.cedula.includes(busqueda) ||
         donante.barrio.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         donante.tipoSangre.toLowerCase().includes(busqueda.toLowerCase())
       );
@@ -130,7 +129,7 @@ export default function RegistroPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center">
+      <div className="bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <Droplets className="h-12 w-12 text-red-600 mx-auto mb-4 animate-pulse" />
           <p className="text-gray-600">Cargando donantes...</p>
@@ -140,7 +139,7 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 p-4">
+    <div className="bg-gradient-to-br from-red-50 to-pink-50 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -204,7 +203,7 @@ export default function RegistroPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    placeholder="Buscar por nombre, DUI, barrio o tipo de sangre..."
+                    placeholder="Buscar por nombre, barrio o tipo de sangre..."
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                     className="pl-10"
@@ -251,9 +250,8 @@ export default function RegistroPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
+                      <th className="text-center p-4 font-semibold text-gray-900">#</th>
                       <th className="text-left p-4 font-semibold text-gray-900">Nombre Completo</th>
-                      <th className="text-left p-4 font-semibold text-gray-900">DUI</th>
-                      <th className="text-left p-4 font-semibold text-gray-900">Teléfono</th>
                       <th className="text-left p-4 font-semibold text-gray-900">Email</th>
                       <th className="text-left p-4 font-semibold text-gray-900">Barrio</th>
                       <th className="text-center p-4 font-semibold text-gray-900">Tipo de Sangre</th>
@@ -269,26 +267,15 @@ export default function RegistroPage() {
                           index % 2 === 0 ? "bg-white" : "bg-gray-25"
                         }`}
                       >
+                        <td className="p-4 text-center">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 font-semibold rounded-full text-sm">
+                            {index + 1}
+                          </span>
+                        </td>
                         <td className="p-4">
                           <div className="font-medium text-gray-900">
                             {donante.nombre} {donante.apellido}
                           </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 text-gray-700">
-                            <IdCard className="h-4 w-4 text-gray-400" />
-                            {donante.cedula}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          {donante.telefono ? (
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <Phone className="h-4 w-4 text-gray-400" />
-                              {donante.telefono}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 text-sm">No registrado</span>
-                          )}
                         </td>
                         <td className="p-4">
                           {donante.email ? (
@@ -336,7 +323,7 @@ export default function RegistroPage() {
           </CardContent>
         </Card>
 
-        {/* Footer */}
+        {/* Navegación y Estadísticas */}
         <div className="text-center mt-8">
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button variant="outline" asChild>

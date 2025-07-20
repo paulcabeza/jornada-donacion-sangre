@@ -116,18 +116,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 bg-gray-900 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex items-center justify-center mb-4">
-            <Droplets className="h-8 w-8 text-red-400 mr-2" />
-            <span className="text-xl font-semibold">Sistema de Donación de Sangre</span>
-          </div>
-          <p className="text-gray-400">
-            Salvando vidas, una donación a la vez.
-          </p>
-        </div>
-      </footer>
+
     </div>
   );
 }
