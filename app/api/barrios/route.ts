@@ -44,10 +44,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(barrio, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating barrio:", error);
     
-    if (error.code === "P2002") {
+    if (error && typeof error === 'object' && 'code' in error && error.code === "P2002") {
       return NextResponse.json(
         { error: "Ya existe un barrio con ese nombre" },
         { status: 409 }

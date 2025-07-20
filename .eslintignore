@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.next/
+out/
+
+# Generated files
+lib/generated/
+*.generated.*
+
+# Build outputs
+dist/
+build/
+
+# Environment files
+.env*
+!.env.example
+
+# Package files
+package-lock.json
+yarn.lock
+
+# Prisma
+prisma/migrations/
+
+# TypeScript build info
+*.tsbuildinfo 

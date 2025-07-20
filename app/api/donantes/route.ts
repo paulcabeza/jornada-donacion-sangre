@@ -87,10 +87,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(donante, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating donante:", error);
 
-    if (error.code === "P2002") {
+    if (error && typeof error === 'object' && 'code' in error && error.code === "P2002") {
       return NextResponse.json(
         { error: "Ya existe un donante con esa cédula" },
         { status: 409 }
