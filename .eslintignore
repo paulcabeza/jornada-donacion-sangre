@@ -6,6 +6,9 @@ out/
 # Generated files
 lib/generated/
 *.generated.*
+lib/generated/prisma/
+lib/generated/prisma/*.d.ts
+lib/generated/prisma/*.js
 
 # Build outputs
 dist/
