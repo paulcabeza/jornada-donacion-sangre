@@ -154,7 +154,7 @@ export default function HomePage() {
             Jornada de Donación de Sangre - Estaca Cuzcatlán
           </h1>
           <p className="text-2xl text-gray-600">
-            18-Julio-2025
+            20-Julio-2025
           </p>
         </div>
 
