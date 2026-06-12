@@ -20,28 +20,49 @@ model Barrio {
   descripcion String?
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-  
+
   // Relación con donantes
   donantes    Donante[]
 
   @@map("barrios")
 }
 
+model Jornada {
+  id          String    @id @default(cuid())
+  nombre      String              // Título del evento, ej. "Estaca Cuzcatlán"
+  fecha       DateTime            // Fecha del evento (se muestra en el header)
+  descripcion String?
+  activa      Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relación con donantes
+  donantes    Donante[]
+
+  @@map("jornadas")
+}
+
 model Donante {
   id            String   @id @default(cuid())
   nombre        String
   apellido      String
-  cedula        String   @unique
+  cedula        String
   telefono      String?
   email         String?
   tipoSangre    String   @map("tipo_sangre")
   fechaDonacion DateTime @default(now()) @map("fecha_donacion")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  
+
   // Relación con barrio
   barrioId      String   @map("barrio_id")
   barrio        Barrio   @relation(fields: [barrioId], references: [id], onDelete: Cascade)
 
+  // Relación con jornada
+  jornadaId     String   @map("jornada_id")
+  jornada       Jornada  @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+
+  // La cédula es única dentro de cada jornada (una persona puede donar en varias jornadas)
+  @@unique([cedula, jornadaId])
   @@map("donantes")
 }

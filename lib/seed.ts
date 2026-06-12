@@ -43,6 +43,21 @@ export async function seedDatabase() {
     }
 
     console.log(`✅ Se crearon ${barriosEjemplo.length} barrios de ejemplo.`);
+
+    // Crear una jornada activa inicial si no existe ninguna
+    const jornadasExistentes = await prisma.jornada.count();
+    if (jornadasExistentes === 0) {
+      await prisma.jornada.create({
+        data: {
+          nombre: "Estaca Cuzcatlán",
+          fecha: new Date("2026-06-14T00:00:00.000Z"),
+          descripcion: "Jornada de donación inicial",
+          activa: true,
+        },
+      });
+      console.log("✅ Se creó la jornada activa inicial.");
+    }
+
     console.log("Base de datos poblada exitosamente!");
 
   } catch (error) {
@@ -58,7 +73,8 @@ export async function clearDatabase() {
     
     await prisma.donante.deleteMany();
     await prisma.barrio.deleteMany();
-    
+    await prisma.jornada.deleteMany();
+
     console.log("✅ Base de datos limpiada.");
   } catch (error) {
     console.error("Error limpiando la base de datos:", error);

@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { resolverJornadaId } from "@/lib/jornadas";
 
-// GET - Obtener todos los donantes
+// GET - Obtener los donantes (filtrados por jornada y, opcionalmente, barrio)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const barrioId = searchParams.get("barrioId");
+    const jornadaId = await resolverJornadaId(searchParams.get("jornadaId"));
+
+    // Sin jornada no hay donantes que mostrar
+    if (!jornadaId) {
+      return NextResponse.json([]);
+    }
 
     const donantes = await prisma.donante.findMany({
-      where: barrioId ? { barrioId } : undefined,
+      where: {
+        jornadaId,
+        ...(barrioId ? { barrioId } : {}),
+      },
       include: {
         barrio: {
           select: {
@@ -53,6 +63,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Resolver la jornada destino (la recibida o la activa)
+    const jornadaId = await resolverJornadaId(body.jornadaId);
+    if (!jornadaId) {
+      return NextResponse.json(
+        { error: "No hay una jornada activa para registrar el donante" },
+        { status: 400 }
+      );
+    }
+
     // Verificar que el barrio existe
     const barrio = await prisma.barrio.findUnique({
       where: { id: barrioId },
@@ -74,6 +93,7 @@ export async function POST(request: Request) {
         email: email || null,
         tipoSangre,
         barrioId,
+        jornadaId,
         fechaDonacion: fechaDonacion ? new Date(fechaDonacion) : new Date(),
       },
       include: {
@@ -92,7 +112,7 @@ export async function POST(request: Request) {
 
     if (error && typeof error === 'object' && 'code' in error && error.code === "P2002") {
       return NextResponse.json(
-        { error: "Ya existe un donante con esa cédula" },
+        { error: "Ya existe un donante con esa cédula en esta jornada" },
         { status: 409 }
       );
     }

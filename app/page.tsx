@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
-import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail } from "lucide-react";
+import { Users, Droplets, MapPin, TrendingUp, Calendar, Phone, Mail, History, ArrowLeft } from "lucide-react";
+
+interface Jornada {
+  id: string;
+  nombre: string;
+  fecha: string;
+  descripcion?: string | null;
+  activa: boolean;
+}
 
 interface Estadisticas {
+  jornada: Jornada | null;
   totalDonantes: number;
   donantesPorBarrio: { id: string; nombre: string; cantidad: number }[];
   donantesPorTipoSangre: { tipo: string; cantidad: number }[];
@@ -25,7 +35,10 @@ interface Donante {
   barrio: { id: string; nombre: string };
 }
 
-export default function HomePage() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const jornadaParam = searchParams.get("jornada");
+
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
   const [donantesBarrio, setDonantesBarrio] = useState<Donante[]>([]);
   const [barrioSeleccionado, setBarrioSeleccionado] = useState<string>("");
@@ -34,11 +47,16 @@ export default function HomePage() {
 
   useEffect(() => {
     cargarEstadisticas();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jornadaParam]);
 
   const cargarEstadisticas = async () => {
     try {
-      const response = await fetch("/api/estadisticas");
+      setIsLoading(true);
+      const url = jornadaParam
+        ? `/api/estadisticas?jornadaId=${jornadaParam}`
+        : "/api/estadisticas";
+      const response = await fetch(url);
       const data = await response.json();
       setEstadisticas(data);
     } catch (error) {
@@ -48,10 +66,24 @@ export default function HomePage() {
     }
   };
 
+  const jornada = estadisticas?.jornada ?? null;
+  const esJornadaPasada = jornada ? !jornada.activa : false;
+
+  const formatearFechaJornada = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   const verDonantesBarrio = async (barrioId: string, nombreBarrio: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/donantes?barrioId=${barrioId}`);
+      const jornadaId = jornada?.id;
+      const response = await fetch(
+        `/api/donantes?barrioId=${barrioId}${jornadaId ? `&jornadaId=${jornadaId}` : ""}`
+      );
       const donantes = await response.json();
       setDonantesBarrio(donantes);
       setBarrioSeleccionado(nombreBarrio);
@@ -145,16 +177,31 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
+        {/* Banner cuando se ve una jornada pasada */}
+        {esJornadaPasada && (
+          <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-amber-800 text-sm">
+              Estás viendo una <span className="font-semibold">jornada pasada</span>. Los datos no corresponden a la jornada actual.
+            </p>
+            <Button variant="outline" size="sm" asChild className="border-amber-300 text-amber-800 hover:bg-amber-100">
+              <a href="/" className="flex items-center gap-1">
+                <ArrowLeft className="h-4 w-4" />
+                Volver a la jornada actual
+              </a>
+            </Button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <TrendingUp className="h-12 w-12 text-red-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Jornada de Donación de Sangre - Estaca Cuzcatlán
+            Jornada de Donación de Sangre{jornada?.nombre ? ` - ${jornada.nombre}` : ""}
           </h1>
           <p className="text-2xl text-gray-600">
-            20-Julio-2025
+            {jornada?.fecha ? formatearFechaJornada(jornada.fecha) : "Sin jornada activa"}
           </p>
         </div>
 
@@ -349,9 +396,15 @@ export default function HomePage() {
         </div>
 
         {/* Navegación */}
-        <div className="text-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Button variant="outline" asChild>
             <a href="/registro">Ver Listado de Donantes</a>
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/historico" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Histórico de Jornadas
+            </a>
           </Button>
         </div>
 
@@ -423,5 +476,22 @@ export default function HomePage() {
         </Dialog>
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Droplets className="h-12 w-12 text-red-600 mx-auto mb-4 animate-pulse" />
+            <p className="text-gray-600">Cargando dashboard...</p>
+          </div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

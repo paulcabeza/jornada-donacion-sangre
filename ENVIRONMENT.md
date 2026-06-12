@@ -71,4 +71,47 @@ tu-contraseña-segura
 
 - Nunca incluyas credenciales reales en el código
 - Usa variables de entorno para todas las configuraciones sensibles
-- El archivo `.env.local` está en `.gitignore` por seguridad 
+- El archivo `.env.local` está en `.gitignore` por seguridad
+
+## Migración: Jornadas (multi-evento + histórico)
+
+A partir de esta versión cada `Donante` pertenece a una **Jornada**. Como el
+`build` de Vercel **no** corre migraciones automáticamente, el cambio de esquema
+en la base de datos es un **paso manual** que debe coordinarse con el deploy.
+
+> ⚠️ El `DATABASE_URL` de `.env` apunta a la base de datos de **producción**
+> (Neon). Toma un respaldo antes de ejecutar estos pasos.
+
+### Runbook (ejecutar una sola vez contra producción)
+
+1. **Columna nullable.** En `prisma/schema.prisma`, en el modelo `Donante`,
+   deja temporalmente la relación de jornada como **opcional** y comenta el
+   índice único compuesto:
+   ```prisma
+   jornadaId  String?  @map("jornada_id")
+   jornada    Jornada? @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+   // @@unique([cedula, jornadaId])   // <- comentar en este paso
+   cedula     String   @unique         // <- mantener temporalmente
+   ```
+   Luego:
+   ```bash
+   npm run db:push
+   ```
+
+2. **Backfill de datos.** Crea las jornadas y asigna los donantes existentes a
+   la jornada de julio 2025:
+   ```bash
+   npx tsx scripts/migrate-jornadas.ts
+   ```
+
+3. **Columna requerida + índice único compuesto.** Restaura el esquema **final**
+   (jornada requerida, sin `@unique` en `cedula`, con `@@unique([cedula, jornadaId])`)
+   y aplica:
+   ```bash
+   npm run db:push
+   npx prisma generate
+   ```
+
+Después de esto, el dashboard mostrará la jornada **activa** por defecto y el
+histórico (`/historico`) listará todas las jornadas. Las jornadas nuevas se
+crean desde `/jornadas` (protegida con `NEXT_PUBLIC_ADMIN_PASSWORD`). 

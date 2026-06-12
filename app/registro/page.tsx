@@ -22,6 +22,7 @@ interface Donante {
 export default function RegistroPage() {
   const [donantes, setDonantes] = useState<Donante[]>([]);
   const [donantesFiltrados, setDonantesFiltrados] = useState<Donante[]>([]);
+  const [jornadaNombre, setJornadaNombre] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -35,6 +36,11 @@ export default function RegistroPage() {
 
   useEffect(() => {
     cargarDonantes();
+    // Cargar el nombre de la jornada activa para dar contexto
+    fetch("/api/estadisticas")
+      .then((res) => res.json())
+      .then((data) => setJornadaNombre(data?.jornada?.nombre ?? ""))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -150,7 +156,9 @@ export default function RegistroPage() {
             Listado de Donantes
           </h1>
           <p className="text-gray-600">
-            Gestión y registro de donantes de sangre
+            {jornadaNombre
+              ? `Jornada actual: ${jornadaNombre}`
+              : "Gestión y registro de donantes de sangre"}
           </p>
         </div>
 
