@@ -74,6 +74,7 @@ function DashboardContent() {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 

@@ -31,6 +31,7 @@ export default function HistoricoPage() {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 

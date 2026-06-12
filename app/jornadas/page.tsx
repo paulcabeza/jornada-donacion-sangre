@@ -107,7 +107,7 @@ export default function JornadasPage() {
   };
 
   const formatearFecha = (f: string) =>
-    new Date(f).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+    new Date(f).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
   // Pantalla de contraseña
   if (!isAuthorized) {
